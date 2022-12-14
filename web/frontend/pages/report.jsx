@@ -45,29 +45,30 @@ export default function ReportPage() {
 	const [dateQuery, setDateQuery] = useState('');
 	const [startDate, setStartDate] = useState('')
 	const [endDate, setEndDate] = useState('')
+	const [orderQuery, setOrderQuery] = useState('')
+	const [startOrderNumber, setStartOrderNumber] = useState('');
+	const [endOrderNumber, setEndOrderNumber] = useState('');
 	const variables = {
 		"ordersFirst": pageSize,
 		"sortKey": "PROCESSED_AT",
 		"reverse": true,
-		"query": query + ' ' + dateQuery,
+		"query": query + ' ' + orderQuery,
 	}
 
 	const func = (res) => {
 		const data = []
-		console.log(res);
 		res.map(ordersList => {
-			console.log(ordersList.body.data.orders);
 			ordersList.body.data.orders.edges.map(t => {
-				console.log(t);
 				let cargoN
 				t.node.tags.map(t => {
 					if (t.indexOf('Cargo') > -1) cargoN = t.split(':')[1]
 				})
 				t.node.lineItems.nodes.map(t1 => {
+					console.log(t);
 					const order = {}
 					order.title = t1.name
 					order.variant = t1.variantTitle
-					order.orderNumber = 'DD' + t?.node?.name?.slice(1, t?.node?.name?.length)
+					order.orderNumber = 'DD' + t?.node?.id?.slice(20, t?.node?.id?.length)
 					order.quantity = t1.quantity
 					order.pricePerUnit = t1.variant.price
 					order.shippingNumber = cargoN
@@ -94,7 +95,7 @@ export default function ReportPage() {
 			func(res)
 			setIsLoading(false);
 		}
-	}, [startDate, endDate]);
+	}, [startOrderNumber, endOrderNumber]);
 
 	const tabs = [
 		{
@@ -115,64 +116,9 @@ export default function ReportPage() {
 		},
 	];
 
-
-	/* Set the QR codes to use in the list */
 	const reportTable = ordersList?.length ? (
 		<Card>
 			<ReportTable Orders={ordersList} loading={isRefetching} />
-			{/* <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 25, paddingBottom: 25 }}>
-				<Pagination
-					hasPrevious={pageInfo?.hasPreviousPage}
-					onPrevious={async () => {
-						console.log('Previous');
-
-						const variables = {
-							ordersLast: pageSize,
-							before: pageInfo.startCursor,
-							sortKey: "PROCESSED_AT",
-							query: query,
-							reverse: true,
-						}
-
-						const response = await fetch("/api/reportsList", {
-							method: "POST",
-							body: JSON.stringify({ variables }),
-							headers: { "Content-Type": "application/json" },
-						});
-
-						if (response.ok) {
-							const res = await response.json()
-							func(res.body.data.orders)
-							console.log(res.body.data.orders)
-						}
-					}}
-
-					hasNext={pageInfo?.hasNextPage}
-					onNext={async () => {
-						console.log('Next');
-
-						const variables = {
-							ordersFirst: pageSize,
-							after: pageInfo.endCursor,
-							sortKey: "PROCESSED_AT",
-							query: query,
-							reverse: true,
-						}
-						const response = await fetch("/api/reportsList", {
-							method: "POST",
-							body: JSON.stringify({ variables }),
-							headers: { "Content-Type": "application/json" },
-						});
-
-						if (response.ok) {
-							const res = await response.json()
-							func(res.body.data.orders)
-							console.log(res.body.data.orders)
-						}
-
-					}}
-				/>
-			</div> */}
 		</Card>
 	) : null;
 
@@ -203,8 +149,6 @@ export default function ReportPage() {
 			</Card>
 		) : null;
 
-	const [startOrderNumber, setStartOrderNumber] = useState('');
-	const [endOrderNumber, setEndOrderNumber] = useState('');
 	const [popoverActive1, setPopoverActive1] = useState(false);
 	const [popoverActive2, setPopoverActive2] = useState(false);
 	const togglePopoverActive1 = useCallback(
@@ -267,53 +211,15 @@ export default function ReportPage() {
 				<Layout>
 					<Layout.Section>
 						<div style={{ display: 'flex' }}>
-							<div style={{ marginTop: 7, paddingRight: 15, paddingLeft: 15 }}>Date: </div>
-							<div style={{ width: 120 }}>
-								<Popover
-									style={{width:'100%'}}
-									active={popoverActive1}
-									activator={activator1}
-									autofocusTarget="first-node"
-									onClose={togglePopoverActive1}
-								>
-									<DatePicker
-										month={month}
-										year={year}
-										onChange={e => {
-											setSelectedDates(e)
-											setStartDate(`${e.start?.getFullYear()}-${e.start?.getMonth() + 1}-${e.start?.getDate()}`)
-										}}
-										onMonthChange={handleMonthChange}
-										selected={selectedDates}
-									/>
-								</Popover>
-							</div>
-							<div style={{ marginTop: 7 }}>~</div>
-							<div style={{ width: 120 }}>
-								<Popover
-									active={popoverActive2}
-									activator={activator2}
-									autofocusTarget="first-node"
-									onClose={togglePopoverActive2}
-								>
-									<DatePicker
-										month={month1}
-										year={year1}
-										onChange={e => {
-											setSelectedDates1(e)
-											setEndDate(`${e.start?.getFullYear()}-${e.start?.getMonth() + 1}-${e.start?.getDate()}`)
-										}}
-										onMonthChange={handleMonthChange1}
-										selected={selectedDates1}
-									/>
-								</Popover>
-							</div>
-							{/* <div style={{ marginTop: 7, paddingLeft: 15, paddingRight: 15 }}>Order Number: </div>
+							
+							<div style={{ marginTop: 7, paddingLeft: 15, paddingRight: 15 }}>Order Number: </div>
 							<div style={{ width: 130 }}>
 								<TextField
 									placeholder="start"
 									value={startOrderNumber}
-									onChange={e => setStartOrderNumber(e)}
+									onChange={e => {
+										setStartOrderNumber(e)
+									}}
 									autoComplete="off"
 								/>
 							</div>
@@ -322,15 +228,15 @@ export default function ReportPage() {
 								<TextField
 									placeholder="end"
 									value={endOrderNumber}
-									onChange={e => setEndOrderNumber(e)}
+									onChange={e => {
+										setEndOrderNumber(e)
+									}}
 									autoComplete="off"
 								/>
-							</div> */}
+							</div>
 							<div style={{ height: 50, paddingLeft: 15 }}>
 								<Button onClick={ async ()=>{
-									if (startDate == "" && endDate != "") { setDateQuery(`processed_at:<\"${endDate}\"`)}
-									else if (startDate != "" && endDate == "") { setDateQuery(`processed_at:>\"${startDate}\"`)}
-									else { setDateQuery(`processed_at:>\"${startDate}\" AND processed_at:<\"${endDate}\"`)}
+									
 								}}>
 									<div style={{ color: '#2271b1', fontSize: 14 }}>
 									סנן	

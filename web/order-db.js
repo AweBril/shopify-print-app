@@ -9,7 +9,7 @@ import { Shopify } from "@shopify/shopify-api";
 const DEFAULT_DB_FILE = path.join(process.cwd(), "qr_codes_db.sqlite");
 const DEFAULT_PURCHASE_QUANTITY = 1;
 
-export const QRCodesDB = {
+export const OrderDB = {
   qrCodesTableName: "qr_codes",
   db: null,
   ready: null,

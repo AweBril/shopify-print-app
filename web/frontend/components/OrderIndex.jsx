@@ -173,7 +173,6 @@ export function OrderIndex({ Orders, loading, onChildSelect }) {
               allResourcesSelected ? 'All' : selectedResources.length
             }
             onSelectionChange={(param1, param2, param3) => {
-              console.log(123123 , param1, param2, param3)
               handleSelectionChange(param1, param2, param3)
               if (param2) {
                 if (param1 === 'single') {

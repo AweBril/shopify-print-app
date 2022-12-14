@@ -1,6 +1,6 @@
 import { Shopify } from "@shopify/shopify-api";
 
-import { QRCodesDB } from "../qr-codes-db.js";
+import { OrderDB } from "../order-db.js";
 
 /*
   The app's database stores the productId and the discountId.
@@ -35,7 +35,7 @@ const QR_CODE_ADMIN_QUERY = `
 
 export async function getQrCodeOr404(req, res, checkDomain = true) {
   try {
-    const response = await QRCodesDB.read(req.params.id);
+    const response = await OrderDB.read(req.params.id);
     if (
       response === undefined ||
       (checkDomain &&
@@ -129,7 +129,7 @@ export async function formatQrCodeResponse(req, res, rawCodeData) {
       Use mock data so that the frontend knows how to interpret this QR Code.
     */
     if (discountDeleted) {
-      QRCodesDB.update(qrCode.id, {
+      OrderDB.update(qrCode.id, {
         ...qrCode,
         discountId: "",
         discountCode: "",

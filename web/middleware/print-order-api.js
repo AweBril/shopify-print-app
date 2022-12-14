@@ -8,16 +8,10 @@
 
 import { Shopify } from "@shopify/shopify-api";
 
-import { QRCodesDB } from "../qr-codes-db.js";
 import {
-  getQrCodeOr404,
-  getShopUrlFromSession,
-  parseQrCodeBody,
-  formatQrCodeResponse,
   asyncForEach,
   array_chunk
 } from "../helpers/order-codes.js";
-import Barcode from "react-barcode";
 import excelJS from "exceljs"
 import fetch from "node-fetch"
 import JsBarcode  from "jsbarcode"
@@ -239,43 +233,24 @@ const DOWNLOAD_LIST_QUERY = `
   }
 `;
 
+const ADD_CARGO_TRACKING_NUMBER = `
+mutation tagsAdd($id: ID!, $tags: [String!]!) {
+  tagsAdd(id: $id, tags: $tags) {
+    node {
+      id
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+`;
+
 
 let session={"shop": "testaddictapp.myshopify.com" , "accessToken": "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", isActive: ()=>{return true}}
 
-export default function applyQrCodeApiEndpoints(app) {
-
-  app.get("/api/orders", async (req, res) => {
-    try {
-      const {Order} = await import (`@shopify/shopify-api/dist/rest-resources/${Shopify.Context.API_VERSION}/index.js`);
-      /* Get the order info */
-      if (req.query.tabIndex == 'All') {
-        const orders = await Order.all({
-          session: session,
-          status: "any",
-        });
-
-        //console.log(orders);
-
-        const response = await formatQrCodeResponse(req, res, orders);
-        res.status(200).send(response);
-
-        } else {
-          const orders = await Order.all({
-            session: session,
-            fulfillment_status : req.query.tabIndex == 'Processing' ? 'unshipped,partial': 'shipped',
-          });
-
-        const response = await formatQrCodeResponse(req, res, orders);
-        res.status(200).send(response);
-      }
-
-    } catch (error) {
-      console.error(error);
-      res.status(500).send(error.message);
-    }
-  });
-
-  
+export default function applyPrintOrderApiEndpoints(app) {
 
   app.post("/api/ordersList", async (req, res) =>{ 
     if (!session) {
@@ -361,11 +336,11 @@ export default function applyQrCodeApiEndpoints(app) {
     const worksheet = workbook.addWorksheet("reports");
 
     worksheet.columns = [
-      { header: "There", key: "there", width: 30 }, 
-      { header: "Order number", key: "order_num", width: 30 },
-      { header: "Quantity", key: "qty", width: 30 },
-      { header: "Price per unit", key: "price", width: 30 },
-      { header: "Shipping number", key: "shipping_num", width: 30 },
+      { header: "של", key: "there", width: 30 }, 
+      { header: "מספר הזמנה", key: "shipping_num", width: 30 },
+      { header: "מספר הזמנהShopify", key: "order_num", width: 30 },
+      { header: "כמות", key: "qty", width: 30 },
+      { header: "מחיר ליחידה", key: "price", width: 30 },
     ];
     retGql.body.data.orders.edges.forEach((order) => {
       const report = {}
@@ -376,10 +351,10 @@ export default function applyQrCodeApiEndpoints(app) {
 
       order.node.lineItems.nodes.map(t1 => {
         report.there = t1.name
+        report.shipping_num = cargoN
         report.order_num = 'DD' + order?.node?.name?.slice(1, order?.node?.name?.length)
         report.qty = t1.quantity
         report.price = t1.variant.price
-        report.shipping_num = cargoN
       })
 
       worksheet.addRow(report); // Add data in worksheet
@@ -417,7 +392,7 @@ export default function applyQrCodeApiEndpoints(app) {
       session: session,
       //status: "any",
       ids,
-    }); // fulfilled order ommited automatically
+    });
 
     let html = `
       <link rel="stylesheet" href="https://allwp.addictonline.co.il/wp-content/themes/matat-child/template/labels.css"></link>
@@ -433,6 +408,464 @@ export default function applyQrCodeApiEndpoints(app) {
 
         tr{
           word-break: break-word;
+        }
+
+        /* Print Styles */
+        @media print {
+          @page {
+            size: auto;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          @page :footer {
+            display: none;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          @page :header {
+            display: none;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          html, body {
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .sticker-page-wrapper1,
+          .sticker-page-wrapper2,
+          .sticker-page-wrapper3 {
+            page-break-before: always;
+            font-size: 14px !important;
+            height: 100%;
+            padding-top: 1.7em !important;
+          }
+
+          .sticker-page-wrapper1 .bar-code,
+          .sticker-page-wrapper2 .bar_code_wrap,
+          .sticker-page-wrapper3 .bar-code {
+            padding-top: 0 !important;
+          }
+
+          .sticker-page-wrapper3 .middle-content {
+            font-size: 1.25em !important;
+          }
+
+          .sticker_wrapper {
+            box-sizing: border-box;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+          }
+        }
+
+        .bottom_date {
+          float: left !important;
+        }
+
+        .sticker-page-wrapper1 {
+          box-sizing: border-box;
+          -webkit-text-size-adjust: 100%;
+        }
+
+        .sticker-page-wrapper1 *, .sticker-page-wrapper1 *:before, .sticker-page-wrapper1 *:after {
+          box-sizing: inherit;
+        }
+
+        .sticker-page-wrapper1 {
+          direction: rtl;
+          color: #000;
+          background: #fff;
+          font: 2.941176471vw/1.5 'Heebo', sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          margin: 0;
+        }
+
+        @media (min-width: 544px) {
+          .sticker-page-wrapper1 {
+            font-size: 16px;
+          }
+        }
+
+        .sticker-page-wrapper1 .sticker_wrapper {
+          max-width: 35.3125em;
+          margin: 0 auto;
+          padding: 0 1em 5.625em;
+          position: relative;
+          min-height: 100%;
+        }
+
+        .sticker-page-wrapper1 img {
+          vertical-align: top;
+          max-width: 100%;
+          height: auto;
+        }
+
+        .sticker-page-wrapper1 .sticker_date {
+          font-weight: 500;
+          text-align: center;
+          padding: 0.1875em;
+        }
+
+        .sticker-page-wrapper1 .bar-code {
+          margin: 0 auto;
+          width: 14.4375em;
+          padding: 1em 0;
+        }
+
+        .sticker-page-wrapper1 .bar-code img {
+          width: 100%;
+        }
+
+        .sticker-page-wrapper1 table {
+          width: 100%;
+          border: 1px solid #000;
+          border-collapse: collapse;
+        }
+
+        .sticker-page-wrapper1 table th,
+        .sticker-page-wrapper1 table td {
+          border: 1px solid #000;
+          padding: 0.5em 1.25em 0.4375em;
+        }
+
+        .sticker-page-wrapper1 table tbody th {
+          width: 55.2%;
+          text-align: right;
+          font-weight: 500;
+        }
+
+        .sticker-page-wrapper1 table tbody td {
+          padding-right: 2.125em;
+        }
+
+        .sticker-page-wrapper1 tfoot td {
+          background: #eaebeb;
+          text-align: center;
+        }
+
+        .sticker-page-wrapper1 .bottom-logo {
+          margin: 0 auto;
+          width: 14.4375em;
+          bottom: 1.8125em;
+          position: absolute;
+          left: 0;
+          right: 0;
+        }
+
+        .sticker-page-wrapper1 .bottom-logo img {
+          width: 100%;
+        }
+        .sticker-page-wrapper2 {
+          box-sizing: border-box;
+          -webkit-text-size-adjust: 100%;
+        }
+
+        .sticker-page-wrapper2 *, .sticker-page-wrapper2 *:before, .sticker-page-wrapper2 *:after {
+          box-sizing: inherit;
+        }
+
+        .sticker-page-wrapper2 {
+          direction: rtl;
+          color: #000;
+          background: #fff;
+          font: 2.941176471vw/1.5 'Heebo', sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          margin: 0;
+        }
+
+        @media (min-width: 544px) {
+          .sticker-page-wrapper2 {
+            font-size: 16px;
+          }
+        }
+
+        .sticker-page-wrapper2 .sticker_wrapper {
+          max-width: 35.3125em;
+          margin: 0 auto;
+          padding: 0 1em 5.625em;
+          position: relative;
+          min-height: 100%;
+        }
+
+        .sticker-page-wrapper2 img {
+          vertical-align: top;
+          max-width: 100%;
+          height: auto;
+        }
+
+        .sticker-page-wrapper2 .sticker_date {
+          font-weight: 500;
+          text-align: center;
+          padding: 0.5em;
+        }
+
+        .sticker-page-wrapper2 .bar_code_wrap {
+          display: flex;
+          padding: 0.5em 0 1em;
+        }
+
+        .sticker-page-wrapper2 .order_detail_info {
+          padding: 0.1875em 0.875em;
+        }
+
+        .bar-code {
+          margin: 0 auto 0 0;
+          width: 14.125em;
+        }
+
+        .sticker-page-wrapper2 .bar-code img {
+          width: 100%;
+        }
+
+        .sticker-page-wrapper2 table {
+          width: 100%;
+          border: 2px solid #000;
+          border-collapse: collapse;
+          font-size: 0.875em;
+          margin: 0 0 1.3571em;
+        }
+
+        .sticker-page-wrapper2 table th,
+        .sticker-page-wrapper2 table td {
+          border: 1px solid #000;
+        }
+
+        .sticker-page-wrapper2 table .sku {
+          width: 7.75em;
+        }
+
+        .sticker-page-wrapper2 table .amount {
+          width: 4.1667em;
+        }
+
+        .sticker-page-wrapper2 table .item_name {
+          width: 20em;
+        }
+
+        .sticker-page-wrapper2 table .return {
+          width: 4.5em;
+        }
+
+        .sticker-page-wrapper2 .text-center {
+          text-align: center !important;
+        }
+
+        .sticker-page-wrapper2 table .reason_code {
+          width: 7.25em;
+        }
+
+        .sticker-page-wrapper2 table thead td,
+        .sticker-page-wrapper2 table thead th {
+          text-align: right;
+          font-size: 0.75em;
+          font-weight: 500;
+          padding: 0.6667em;
+        }
+
+        .sticker-page-wrapper2 table tbody td {
+          padding: 0.5714em 0.52em 0.53em;
+        }
+
+        .sticker-page-wrapper2 .form_title {
+          display: block;
+          margin: 0 0 0.4375em;
+        }
+
+        .sticker-page-wrapper2 .checkbox_wrap {
+          display: inline-block;
+          vertical-align: top;
+          text-align: right;
+          position: relative;
+          margin: 0 1.0625em;
+        }
+
+        .sticker-page-wrapper2 .checkbox_wrap label {
+          display: inline-block;
+          vertical-align: top;
+          padding-right: 1.9375em;
+        }
+
+        .sticker-page-wrapper2 .checkbox_wrap label input[type="checkbox"] {
+          position: absolute;
+          top: 0;
+          right: 0;
+          opacity: 0;
+        }
+
+        .sticker-page-wrapper2 .checkbox_wrap label input[type="checkbox"]:checked ~ .fake-input:before {
+          opacity: 1;
+        }
+
+        .sticker-page-wrapper2 .checkbox_wrap .fake-input {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 1.4375em;
+          height: 1.4375em;
+          border: 2px solid #000;
+        }
+
+        .sticker-page-wrapper2 .checkbox_wrap .fake-input:before {
+          content: '';
+          position: absolute;
+          border: 2px solid #000;
+          border-width: 0 2px 2px 0;
+          width: 0.4375em;
+          height: 0.875em;
+          top: 45%;
+          right: 50%;
+          opacity: 0;
+          transition: 0.25s ease opacity;
+          -webkit-transform: translate(50%, -50%) rotate(45deg);
+          -moz-transform: translate(50%, -50%) rotate(45deg);
+          -ms-transform: translate(50%, -50%) rotate(45deg);
+          -o-transform: translate(50%, -50%) rotate(45deg);
+          transform: translate(50%, -50%) rotate(45deg);
+        }
+
+        .sticker-page-wrapper2 .bottom-info {
+          font-size: 0.75em;
+          padding: 0.25em 0 0.6667em;
+        }
+
+        .sticker-page-wrapper2 textarea.notes_input {
+          display: block;
+          width: 100%;
+          resize: none;
+          border: 1px solid #000;
+          color: #000;
+          background: #eaebeb;
+          font: 500 1em/1 'Heebo', sans-serif;
+          height: 2.625em;
+          padding: 0.6875em 0.875em;
+        }
+
+        .sticker-page-wrapper2 .bottom-logo {
+          margin: 0 auto;
+          width: 14.4375em;
+          bottom: 1.8125em;
+          position: absolute;
+          left: 0;
+          right: 0;
+        }
+
+        .sticker-page-wrapper2 .bottom-logo img {
+          width: 100%;
+        }
+        .sticker-page-wrapper3 {
+          box-sizing: border-box;
+          -webkit-text-size-adjust: 100%;
+        }
+
+        .sticker-page-wrapper3 *, .sticker-page-wrapper3 *:before, .sticker-page-wrapper3 *:after {
+          box-sizing: inherit;
+        }
+
+        .sticker-page-wrapper3 {
+          direction: rtl;
+          color: #000;
+          background: #fff;
+          font: 2.941176471vw/1.5 'Heebo', sans-serif;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          margin: 0;
+        }
+
+        @media (min-width: 544px) {
+          .sticker-page-wrapper3 {
+            font-size: 16px;
+          }
+        }
+
+        .sticker-page-wrapper3 .sticker_wrapper {
+          max-width: 35.3125em;
+          margin: 0 auto;
+          padding: 0 1em 5.625em;
+          position: relative;
+          min-height: 100%;
+        }
+
+        .sticker-page-wrapper3 img {
+          vertical-align: top;
+          max-width: 100%;
+          height: auto;
+        }
+
+        .sticker-page-wrapper3 .bar-code {
+          margin: 0 auto;
+          width: 24.4375em;
+          padding: 1em 0;
+        }
+
+        .sticker-page-wrapper3 .bar-code img {
+          /* width: 100%; */
+          width: auto;
+          display: block;
+        }
+
+        .sticker-page-wrapper3 .top-info-text {
+          text-align: center;
+          border: 1px solid #000;
+          background: #eaeceb;
+          padding: 0.3333em 0.5em 0.4583em;
+          font-size: 1.24em;
+          line-height: 1.6667;
+        }
+
+        .sticker-page-wrapper3 .top-info-text strong {
+          font-weight: 500;
+          display: block;
+        }
+
+        .sticker-page-wrapper3 .middle-content {
+          font-size: 1.24em;
+          line-height: 1.8958;
+          padding: 2.2083em 0.3333em 1.125em;
+        }
+
+        .sticker-page-wrapper3 strong {
+          font-weight: 500;
+        }
+
+        .sticker-page-wrapper3 .middle-content .title-text {
+          display: block;
+          font-size: 1.1667em;
+          line-height: 1.5;
+          margin-bottom: 0.0714em;
+        }
+
+        .sticker-page-wrapper3 .bottom-info-text {
+          text-align: center;
+          border: 1px solid #000;
+          background: #eaeceb;
+          font-size: 1.24em;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          line-height: 1.9167;
+          padding: 0.25em 0 0.375em;
+        }
+
+        .sticker-page-wrapper3 .bottom-info-text .data {
+          margin: 0 0.75em;
+        }
+
+        .sticker-page-wrapper3 .bottom-logo {
+          margin: 0 auto;
+          width: 14.4375em;
+          bottom: 1.8125em;
+          position: absolute;
+          left: 0;
+          right: 0;
+        }
+
+        .sticker-page-wrapper3 .bottom-logo img {
+          width: 100%;
         }
       </style>
     `;
@@ -483,7 +916,7 @@ export default function applyQrCodeApiEndpoints(app) {
       
       let devnum_idx = -1;
       let kav_idx = -1;
-      let devnum = '';
+      // let devnum = '3421';
       let kav = '';
       let formBody = [];
       formBody.push(ship_data.type);
@@ -528,27 +961,59 @@ export default function applyQrCodeApiEndpoints(app) {
         }
       ).then(response => response.text())
       let result = JSON.parse(convert.xml2json(response,{compact: true, spaces: 2}));
-      let devNum = result.SaveDataResult.DeliveryNumber._text;
-      let devNumString = result.SaveDataResult.DeliveryNumberString._text;
-      
-      let canvas = createCanvas();
-      JsBarcode(canvas, devnum, {format: "pharmacode",      
-      height: 40,
-      displayValue: false});
-      let devnum_barcode = canvas.toDataURL("image/png")
+      let devnum = parseInt(result.SaveDataResult.DeliveryNumber._text);
+
+      let cargoStatus = false;
+      cargoStatus = order.tags.includes('Cargo');
+
+      if (!cargoStatus)
+      {
+        const client = new Shopify.Clients.Graphql(
+          session.shop,
+          session.accessToken
+        );
+  
+        const addTags = await client.query({
+          data: {
+            query: ADD_CARGO_TRACKING_NUMBER,
+            variables: {
+              id: order.admin_graphql_api_id,
+              tags: 'Cargo Tracking:' + devnum,           
+            },
+          },
+        });
+      }   
+
+      let canvas1 = createCanvas();
+      JsBarcode(canvas1, devnum, {    
+        displayValue: true,
+        textAlign: "right",
+        height: 50,
+        font: "arial",
+        fontSize: 15,});
+      let devnum_barcode = canvas1.toDataURL("image/png");
+
+      let ordernum = 'RR' + parseInt(devnum + 3000);
+      let canvas2 = createCanvas();
+      JsBarcode(canvas2, ordernum, {    
+        displayValue: true,
+        textAlign: "right",
+        height: 50,
+        font: "arial",
+        fontSize: 15,});
+      let ordernum_barcode = canvas2.toDataURL("image/png");
 
       html += `
       <div class="sticker-page-wrapper1">
 				<div class="sticker_wrapper">
           <div class="bar-code">
 						<img src="${devnum_barcode}">
-            <font>${devnum}</font>
 					</div>
 					<table>
 						<tbody>
 							<tr>
 								<th>מאת ADDICT</th>
-								<td><div style="float:left"> ${shopify_order_id}</div><div style="float:right">${order.id}</div></td>
+								<td><div style="float:right">${order.id}</div></td>
 							</tr>
 							<tr>
 								<th>יוחנן הסנדלר 5 הרצליה</th>
@@ -598,11 +1063,9 @@ export default function applyQrCodeApiEndpoints(app) {
 									<strong>עבור:</strong>${order_billing_first_name} ${order_billing_last_name}
 								</div>
 								<div class="data_row"><strong>מס׳ הזמנה:</strong>${order.id}</div>
-								<div class="data_row"><strong>מספר הזמנה נוסף:</strong>DD${shopify_order_id}</div>
 							</div>
 							<div class="bar-code">
                 <img src="${devnum_barcode}">
-                <font>${devnum}</font>
 							</div>
 						</div>
             <strong class="form_title text-center">נא סמני ב- "X" איזה פריט את מחזירה וצרפי את המדבקה הנ"ל לתוך החבילה</strong>
@@ -667,8 +1130,7 @@ export default function applyQrCodeApiEndpoints(app) {
 			<div class="sticker-page-wrapper3">
 				<div class="sticker_wrapper">
           <div class="bar-code">
-            <img src="${devnum_barcode}">
-            <font>${devnum}</font>
+            <img src="${ordernum_barcode}">
           </div>
 					<div class="top-info-text">
 						תגוביינא רשום מיוחד- אין צורך בבול <strong>אישור מס׳ 16941</strong>

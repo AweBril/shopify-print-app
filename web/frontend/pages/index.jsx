@@ -8,7 +8,6 @@ import {
 	Tabs,
 	Select,
 	Button,
-	TextStyle,
 	Icon,
 	TextField,
 	Pagination
@@ -19,9 +18,7 @@ import { useAuthenticatedFetch, useAppQuery } from "../hooks";
 import { useState, useCallback } from 'react';
 import { SearchMinor, FilterMajor, ImageMajor } from "@shopify/polaris-icons"
 
-import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { useEffect } from 'react';
-import { useAsyncError } from 'react-router-dom';
 
 const currency = {
 	"USD": "$",
@@ -55,7 +52,6 @@ export default function HomePage() {
 		[],
 	);
 
-
 	const tabs = [
 		{
 			id: 'all-orders-1',
@@ -74,8 +70,6 @@ export default function HomePage() {
 			panelID: 'complete-orders-content-1',
 		},
 	];
-
-
 
 	const [isLoading, setIsLoading] = useState(false);
 	const [ordersList, setOrdersList] = useState({})
@@ -109,7 +103,6 @@ export default function HomePage() {
 		setOrdersList(data);
 		setPageInfo(orders.pageInfo)
 	}
-
 
 	useEffect(async () => {
 		setIsLoading(true);
@@ -150,33 +143,11 @@ export default function HomePage() {
 	};
 
 	const onSearch = async () => {
-		console.log('query -----', query + ' ' + tabquery + ' ' + dayquery)
-		// const variables = {
-		// 	ordersLast: pageSize,
-		// 	before: pageInfo.startCursor,
-		// 	sortKey: "PROCESSED_AT",
-		// 	query: query + ' ' + tabquery + ' ' + dayquery,
-		// 	reverse: true,
-		// }
-
-		// const response = await fetch("/api/ordersList", {
-		// 	method: "POST",
-		// 	body: JSON.stringify({ variables }),
-		// 	headers: { "Content-Type": "application/json" },
-		// });
-
-		// if (response.ok) {
-		// 	const res = await response.json()
-		// 	func(res.body.data.orders)
-		// 	setIsLoading(false);
-		// 	console.log(res.body.data.orders)
-		// }
+	
 	}
 
 	const [selectedChild, setSelectedChild] = useState([])
 
-
-	/* Set the QR codes to use in the list */
 	const ordersMarkup = ordersList?.length ? (
 		<Card>
 			<Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
@@ -205,7 +176,6 @@ export default function HomePage() {
 							const res = await response.json()
 							func(res.body.data.orders)
 							setIsLoading(false);
-							console.log(res.body.data.orders)
 						}
 					}}
 
@@ -230,7 +200,6 @@ export default function HomePage() {
 							setIsLoading(false);
 							const res = await response.json()
 							func(res.body.data.orders)
-							console.log(res.body.data.orders)
 						}
 
 					}}
@@ -261,11 +230,8 @@ export default function HomePage() {
 					body: JSON.stringify({selIds}),
 					headers: { "Content-Type": "application/json" },
 				});
-				console.log(response);
 				if (response.ok) {
 					setIsLoading(false);
-	
-					console.log('frontend printlabel')
 					window.open("https://testaddictapp.myshopify.com/pages/print_label", "_blank")
 				}
 			}
@@ -286,10 +252,8 @@ export default function HomePage() {
 			<Card sectioned>
 				<EmptyState
 					heading="No orders found"
-					/* This button will take the user to a Create a QR code page */
 					action={{
 						content: "Orders",
-						// onAction: () => navigate("/qrcodes/new"),
 					}}
 					image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
 				>
@@ -297,10 +261,6 @@ export default function HomePage() {
 			</Card>
 		) : null;
 
-	/*
-	Use Polaris Page and TitleBar components to create the page layout,
-	and include the empty state contents set above.
-	*/
 	return (
 		<Page fullWidth={true}>
 			<div style={{ backgroundColor: 'white' }}>
@@ -354,11 +314,6 @@ export default function HomePage() {
 									maxHeight={100}
 								/>
 							</div>
-							{/* <div style={{ height: 50, paddingLeft: 15 }}>
-								<Button onClick={onSearch}>
-									<span style={{ color: '#2271b1', fontSize: 14 }}>Search</span>
-								</Button>
-							</div> */}
 						</div>
 					</Layout.Section>
 					<Layout.Section>

@@ -12,8 +12,8 @@ import productCreator from "./helpers/product-creator.js";
 import redirectToAuth from "./helpers/redirect-to-auth.js";
 import { BillingInterval } from "./helpers/ensure-billing.js";
 import { AppInstallations } from "./app_installations.js";
-import applyQrCodeApiEndpoints from "./middleware/qr-code-api.js";
-import { QRCodesDB } from "./qr-codes-db.js";
+import applyPrintOrderApiEndpoints from "./middleware/print-order-api.js";
+import { OrderDB } from "./order-db.js";
 
 const USE_ONLINE_TOKENS = false;
 
@@ -26,8 +26,8 @@ const PROD_INDEX_PATH = `${process.cwd()}/frontend/dist/`;
 const dbFile = join(process.cwd(), "database.sqlite");
 const sessionDb = new Shopify.Session.SQLiteSessionStorage(dbFile);
 // Initialize SQLite DB
-QRCodesDB.db = sessionDb.db;
-QRCodesDB.init();
+OrderDB.db = sessionDb.db;
+OrderDB.init();
 Shopify.Context.initialize({
   API_KEY: process.env.SHOPIFY_API_KEY,
   API_SECRET_KEY: process.env.SHOPIFY_API_SECRET,
@@ -122,7 +122,7 @@ export async function createServer(
   // All endpoints after this point will have access to a request.body
   // attribute, as a result of the express.json() middleware
   app.use(express.json());
-  applyQrCodeApiEndpoints(app);
+  applyPrintOrderApiEndpoints(app);
 
   app.use((req, res, next) => {
     const shop = Shopify.Utils.sanitizeShop(req.query.shop);
