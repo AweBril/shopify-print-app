@@ -14,9 +14,6 @@ import {
 } from "../helpers/order-codes.js";
 import excelJS from "exceljs"
 import fetch from "node-fetch"
-import JsBarcode  from "jsbarcode"
-//import Canvas from "canvas"
-import { createCanvas } from "canvas"
 import moment from "moment"
 import convert from 'xml-js';
 
@@ -248,11 +245,16 @@ mutation tagsAdd($id: ID!, $tags: [String!]!) {
 `;
 
 
-let session={"shop": "testaddictapp.myshopify.com" , "accessToken": "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", isActive: ()=>{return true}}
+let session={"shop": "testaddictapp.myshopify.com" , "accessToken": "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", isActive: ()=>{return true}}
 
 export default function applyPrintOrderApiEndpoints(app) {
 
   app.post("/api/ordersList", async (req, res) =>{ 
+    // const session = await Shopify.Utils.loadCurrentSession(
+    //   req,
+    //   res,
+    //   app.get("use-online-tokens")
+    // );
     if (!session) {
       res.status(401).send("Could not find a Shopify session");
       return;
@@ -270,11 +272,20 @@ export default function applyPrintOrderApiEndpoints(app) {
         variables: req.body.variables,
       },
     });
+    const ret = {
+      ordersList: ordersList,
+      session: session,
+    }
 
-    res.status(200).send(ordersList);
-  })
+    res.status(200).send(ret);
+  });
 
   app.post("/api/reportsList", async (req, res) =>{
+    // const session = await Shopify.Utils.loadCurrentSession(
+    //   req,
+    //   res,
+    //   app.get("use-online-tokens")
+    // );
     
     if (!session) {
       res.status(401).send("Could not find a Shopify session");
@@ -313,6 +324,11 @@ export default function applyPrintOrderApiEndpoints(app) {
 
 
   app.post("/api/downloadExcel", async (req, res) => {
+    // const session = await Shopify.Utils.loadCurrentSession(
+    //   req,
+    //   res,
+    //   app.get("use-online-tokens")
+    // );
 
     if (!session) {
       res.status(401).send("Could not find a Shopify session");
@@ -352,7 +368,7 @@ export default function applyPrintOrderApiEndpoints(app) {
       order.node.lineItems.nodes.map(t1 => {
         report.there = t1.name
         report.shipping_num = cargoN
-        report.order_num = 'DD' + order?.node?.name?.slice(1, order?.node?.name?.length)
+        report.order_num = order?.node?.id?.slice(20, order?.node?.id?.length)
         report.qty = t1.quantity
         report.price = t1.variant.price
       })
@@ -377,6 +393,11 @@ export default function applyPrintOrderApiEndpoints(app) {
 
 
   app.post("/api/printLabel", async (req, res) => {
+    // const session = await Shopify.Utils.loadCurrentSession(
+    //   req,
+    //   res,
+    //   app.get("use-online-tokens")
+    // );
     const {Order, Page } = await import (`@shopify/shopify-api/dist/rest-resources/${Shopify.Context.API_VERSION}/index.js`);
 
     let ids = '';
@@ -495,7 +516,7 @@ export default function applyPrintOrderApiEndpoints(app) {
           margin: 0 auto;
           padding: 0 1em 5.625em;
           position: relative;
-          min-height: 100%;
+          min-height: 100vh;
         }
 
         .sticker-page-wrapper1 img {
@@ -549,8 +570,8 @@ export default function applyPrintOrderApiEndpoints(app) {
 
         .sticker-page-wrapper1 .bottom-logo {
           margin: 0 auto;
-          width: 14.4375em;
-          bottom: 1.8125em;
+          width: 20vw;
+          bottom: 3.8125em;
           position: absolute;
           left: 0;
           right: 0;
@@ -589,7 +610,7 @@ export default function applyPrintOrderApiEndpoints(app) {
           margin: 0 auto;
           padding: 0 1em 5.625em;
           position: relative;
-          min-height: 100%;
+          min-height: 100vh;
         }
 
         .sticker-page-wrapper2 img {
@@ -747,8 +768,8 @@ export default function applyPrintOrderApiEndpoints(app) {
 
         .sticker-page-wrapper2 .bottom-logo {
           margin: 0 auto;
-          width: 14.4375em;
-          bottom: 1.8125em;
+          width: 20vw;
+          bottom: 3.8125em;
           position: absolute;
           left: 0;
           right: 0;
@@ -787,7 +808,7 @@ export default function applyPrintOrderApiEndpoints(app) {
           margin: 0 auto;
           padding: 0 1em 5.625em;
           position: relative;
-          min-height: 100%;
+          min-height: 100vh;
         }
 
         .sticker-page-wrapper3 img {
@@ -857,8 +878,8 @@ export default function applyPrintOrderApiEndpoints(app) {
 
         .sticker-page-wrapper3 .bottom-logo {
           margin: 0 auto;
-          width: 14.4375em;
-          bottom: 1.8125em;
+          width: 20vw;
+          bottom: 3.8125em;
           position: absolute;
           left: 0;
           right: 0;
@@ -870,7 +891,7 @@ export default function applyPrintOrderApiEndpoints(app) {
       </style>
     `;
     
-    
+    let devnum = '', ordernum = '';
     await asyncForEach(orders, async (order) => {
       
       let order_billing_first_name = order.billing_address.first_name;
@@ -916,7 +937,6 @@ export default function applyPrintOrderApiEndpoints(app) {
       
       let devnum_idx = -1;
       let kav_idx = -1;
-      // let devnum = '3421';
       let kav = '';
       let formBody = [];
       formBody.push(ship_data.type);
@@ -961,7 +981,8 @@ export default function applyPrintOrderApiEndpoints(app) {
         }
       ).then(response => response.text())
       let result = JSON.parse(convert.xml2json(response,{compact: true, spaces: 2}));
-      let devnum = parseInt(result.SaveDataResult.DeliveryNumber._text);
+      devnum = parseInt(result.SaveDataResult.DeliveryNumber._text);
+      ordernum = "RR" + order.id;
 
       let cargoStatus = false;
       cargoStatus = order.tags.includes('Cargo');
@@ -984,30 +1005,11 @@ export default function applyPrintOrderApiEndpoints(app) {
         });
       }   
 
-      let canvas1 = createCanvas();
-      JsBarcode(canvas1, devnum, {    
-        displayValue: true,
-        textAlign: "right",
-        height: 50,
-        font: "arial",
-        fontSize: 15,});
-      let devnum_barcode = canvas1.toDataURL("image/png");
-
-      let ordernum = 'RR' + parseInt(devnum + 3000);
-      let canvas2 = createCanvas();
-      JsBarcode(canvas2, ordernum, {    
-        displayValue: true,
-        textAlign: "right",
-        height: 50,
-        font: "arial",
-        fontSize: 15,});
-      let ordernum_barcode = canvas2.toDataURL("image/png");
-
       html += `
       <div class="sticker-page-wrapper1">
 				<div class="sticker_wrapper">
           <div class="bar-code">
-						<img src="${devnum_barcode}">
+						<img class="bar-code-dev" src="">
 					</div>
 					<table>
 						<tbody>
@@ -1065,7 +1067,7 @@ export default function applyPrintOrderApiEndpoints(app) {
 								<div class="data_row"><strong>מס׳ הזמנה:</strong>${order.id}</div>
 							</div>
 							<div class="bar-code">
-                <img src="${devnum_barcode}">
+                <img class="bar-code-dev" src="">
 							</div>
 						</div>
             <strong class="form_title text-center">נא סמני ב- "X" איזה פריט את מחזירה וצרפי את המדבקה הנ"ל לתוך החבילה</strong>
@@ -1130,7 +1132,7 @@ export default function applyPrintOrderApiEndpoints(app) {
 			<div class="sticker-page-wrapper3">
 				<div class="sticker_wrapper">
           <div class="bar-code">
-            <img src="${ordernum_barcode}">
+            <img class="bar-code-order" src="">
           </div>
 					<div class="top-info-text">
 						תגוביינא רשום מיוחד- אין צורך בבול <strong>אישור מס׳ 16941</strong>
@@ -1166,8 +1168,23 @@ export default function applyPrintOrderApiEndpoints(app) {
       }
 
       init();
+
+      function textToBase64Barcode(text){
+        var canvas = document.createElement("canvas");
+        JsBarcode(canvas, text, {
+          format: "CODE39",
+          height: 100,
+          fontSize: 25,
+          displayValue: true,
+          textAlign: "right"
+        });
+        return canvas.toDataURL("image/png");
+      }
+      $('.bar-code-dev').attr('src', textToBase64Barcode('` + devnum + `'));
+      $('.bar-code-order').attr('src', textToBase64Barcode('` + ordernum + `'));
     </script>
     `
+
     const pages= await Page.all({
       session: session,
     });

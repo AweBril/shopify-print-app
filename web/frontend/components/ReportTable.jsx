@@ -106,9 +106,6 @@ export function ReportTable({ Orders, loading }) {
             {title}
           </IndexTable.Cell>
           <IndexTable.Cell>
-            {shippingNumber}
-          </IndexTable.Cell>
-          <IndexTable.Cell>
             {orderNumber}
           </IndexTable.Cell>
           <IndexTable.Cell>
@@ -116,6 +113,9 @@ export function ReportTable({ Orders, loading }) {
           </IndexTable.Cell>
           <IndexTable.Cell>
             {pricePerUnit}
+          </IndexTable.Cell>
+          <IndexTable.Cell>
+            {shippingNumber}
           </IndexTable.Cell>
         </IndexTable.Row>
       );
@@ -134,9 +134,9 @@ export function ReportTable({ Orders, loading }) {
             headings={[
               { title: "של" },
               { title: "מספר הזמנה" },
-              { title: "מספר הזמנהShopify" },
               { title: "כמות" },
               { title: "מחיר ליחידה" },
+              { title: "מספר הזמנה" },
             ]}
             loading={loading}
             selectable={false}

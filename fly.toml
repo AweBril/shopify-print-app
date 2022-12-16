@@ -1,0 +1,42 @@
+# fly.toml file generated for print-app on 2022-12-15T15:41:55+01:00
+
+app = "print-app"
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+[env]
+  PORT = "8081"
+  HOST = "https://print-app.fly.dev"
+  SHOPIFY_API_KEY = "efa09f4000e5e1093e033db3d526457f"
+  SCOPES = "write_orders,read_orders,write_files,write_online_store_pages,write_order_edits,read_products,write_products,read_customers,read_content,write_content"
+
+[experimental]
+  allowed_public_ports = []
+  auto_rollback = true
+
+[[services]]
+  http_checks = []
+  internal_port = 8081
+  processes = ["app"]
+  protocol = "tcp"
+  script_checks = []
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    restart_limit = 0
+    timeout = "2s"

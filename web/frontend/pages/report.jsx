@@ -38,6 +38,7 @@ export default function ReportPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [isRefetching, setRefetching] = useState(false);
 	const [ordersList, setOrdersList] = useState({})
+	const [reportsList, setReportsList] = useState({})
 	const [pageInfo, setPageInfo] = useState({})
 
 	const pageSize = 10
@@ -50,7 +51,7 @@ export default function ReportPage() {
 	const [endOrderNumber, setEndOrderNumber] = useState('');
 	const variables = {
 		"ordersFirst": pageSize,
-		"sortKey": "PROCESSED_AT",
+		"sortKey": "ID",
 		"reverse": true,
 		"query": query + ' ' + orderQuery,
 	}
@@ -64,21 +65,37 @@ export default function ReportPage() {
 					if (t.indexOf('Cargo') > -1) cargoN = t.split(':')[1]
 				})
 				t.node.lineItems.nodes.map(t1 => {
-					console.log(t);
 					const order = {}
 					order.title = t1.name
 					order.variant = t1.variantTitle
-					order.orderNumber = 'DD' + t?.node?.id?.slice(20, t?.node?.id?.length)
+					order.orderNumber = t?.node?.id?.slice(20, t?.node?.id?.length)
 					order.quantity = t1.quantity
 					order.pricePerUnit = t1.variant.price
 					order.shippingNumber = cargoN
-					data.push(order)
+					data.push(order);
 				})
 			})
 		})
-		console.log(data)
 		setOrdersList(data);
+		setReportsList(data);
 		// setPageInfo(ordersList[0].pageInfo)
+	}
+
+	const filterReport = (reports) => {
+		const data = []
+		reports.map(report => {
+			if (startOrderNumber == "") {
+				if (endOrderNumber == "" || (report.orderNumber <= endOrderNumber && endOrderNumber != "")){
+					data.push(report);
+				}
+			}
+			else {
+				if ((startOrderNumber <= report.orderNumber && endOrderNumber == "") || (startOrderNumber <= report.orderNumber && report.orderNumber <= endOrderNumber && endOrderNumber !="")) {
+					data.push(report);
+				}
+			}
+		});
+		setOrdersList(data);
 	}
 
 	useEffect(async () => {
@@ -95,7 +112,7 @@ export default function ReportPage() {
 			func(res)
 			setIsLoading(false);
 		}
-	}, [startOrderNumber, endOrderNumber]);
+	}, []);
 
 	const tabs = [
 		{
@@ -137,10 +154,10 @@ export default function ReportPage() {
 		!isLoading && !ordersList?.length ? (
 			<Card sectioned>
 				<EmptyState
-					heading="No orders found"
+					heading="No reports found"
 					/* This button will take the user to a Create a QR code page */
 					action={{
-						content: "Orders",
+						content: "Reports",
 						// onAction: () => navigate("/qrcodes/new"),
 					}}
 					image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
@@ -215,7 +232,7 @@ export default function ReportPage() {
 							<div style={{ marginTop: 7, paddingLeft: 15, paddingRight: 15 }}>Order Number: </div>
 							<div style={{ width: 130 }}>
 								<TextField
-									placeholder="start"
+									placeholder=""
 									value={startOrderNumber}
 									onChange={e => {
 										setStartOrderNumber(e)
@@ -226,7 +243,7 @@ export default function ReportPage() {
 							<div style={{ marginTop: 7 }}>~</div>
 							<div style={{ width: 130 }}>
 								<TextField
-									placeholder="end"
+									placeholder=""
 									value={endOrderNumber}
 									onChange={e => {
 										setEndOrderNumber(e)
@@ -236,7 +253,7 @@ export default function ReportPage() {
 							</div>
 							<div style={{ height: 50, paddingLeft: 15 }}>
 								<Button onClick={ async ()=>{
-									
+									filterReport(reportsList)
 								}}>
 									<div style={{ color: '#2271b1', fontSize: 14 }}>
 									סנן	

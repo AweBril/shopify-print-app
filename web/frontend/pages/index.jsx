@@ -36,6 +36,7 @@ export default function HomePage() {
 
 	const [selectedTab, setSelectedTab] = useState(0);
 	const [tabquery, setTabquery] = useState('')
+	const [shopName, setShopName] = useState('')
 
 	const handleTabChange = useCallback(
 		(selectedTabIndex) => {
@@ -114,7 +115,8 @@ export default function HomePage() {
 
 		if (response.ok) {
 			const res = await response.json()
-			const orders = res.body.data.orders
+			const orders = res.ordersList.body.data.orders;
+			setShopName(res.session.shop);
 			func(orders)
 			setIsLoading(false);
 		}
@@ -151,7 +153,7 @@ export default function HomePage() {
 	const ordersMarkup = ordersList?.length ? (
 		<Card>
 			<Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
-			<OrderIndex Orders={ordersList} loading={isLoading} onChildSelect={e => myFunc(e)} />
+			<OrderIndex shopName={shopName} Orders={ordersList} loading={isLoading} onChildSelect={e => myFunc(e)} />
 			<div style={{ display: 'flex', justifyContent: 'center', paddingTop: 25, paddingBottom: 25 }}>
 				<Pagination
 					hasPrevious={pageInfo?.hasPreviousPage}
@@ -174,7 +176,7 @@ export default function HomePage() {
 
 						if (response.ok) {
 							const res = await response.json()
-							func(res.body.data.orders)
+							func(res.ordersList.body.data.orders)
 							setIsLoading(false);
 						}
 					}}
@@ -199,7 +201,7 @@ export default function HomePage() {
 						if (response.ok) {
 							setIsLoading(false);
 							const res = await response.json()
-							func(res.body.data.orders)
+							func(res.ordersList.body.data.orders)
 						}
 
 					}}
@@ -232,7 +234,7 @@ export default function HomePage() {
 				});
 				if (response.ok) {
 					setIsLoading(false);
-					window.open("https://testaddictapp.myshopify.com/pages/print_label", "_blank")
+					window.open("https://" + shopName + "/pages/print_label", "_blank")
 				}
 			}
 		}

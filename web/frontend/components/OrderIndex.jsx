@@ -75,7 +75,7 @@ function SmallScreenCard({
   );
 }
 
-export function OrderIndex({ Orders, loading, onChildSelect }) {
+export function OrderIndex({ shopName, Orders, loading, onChildSelect }) {
   const navigate = useNavigate();
 
   /* Check if screen is small */
@@ -116,13 +116,10 @@ export function OrderIndex({ Orders, loading, onChildSelect }) {
         }
       })
 
-      if (!isInvolveCargo) cargo = 'There are no shipments to display'
+      if (!isInvolveCargo) cargo = 'אין משלוחים להצגה'
       else cargo = <div>
-        Shipping number<br />
+        מספר משלוח: <br />
         <div style={{ fontWeight: "bold", color: '#0066FF', marginBottom: 4 }}>{cargoN}</div>
-        <div style={{ display: 'inline', backgroundColor: "#c8e3ca", fontSize: 13, textAlign: 'center', borderRadius: 3, paddingTop: 5, paddingLeft: 10, paddingRight: 10, paddingBottom: 5, color: '#5f8147' }}>
-          Print label
-        </div>
       </div>
       return (
         <IndexTable.Row
@@ -131,7 +128,7 @@ export function OrderIndex({ Orders, loading, onChildSelect }) {
           selected={selectedResources.includes(id)}
           position={index}
           onClick={() => {
-            // navigate(`/qrcodes/${id}`);
+            navigate("https://" + shopName + "/admin/orders/" + id?.slice(20, id?.length));
           }}
         >
           <IndexTable.Cell>
@@ -201,7 +198,7 @@ export function OrderIndex({ Orders, loading, onChildSelect }) {
               { title: "Date" },
               { title: "Status" },
               { title: "Total" },
-              { title: "Cargo Express Couriers" },
+              { title: "קרגו אקספרסס שליחויות" },
             ]}
             loading={loading}
           >
